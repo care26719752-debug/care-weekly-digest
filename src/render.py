@@ -23,7 +23,7 @@ _TEMPLATE = Template(
 <!doctype html>
 <html lang="ko"><head><meta charset="utf-8"></head>
 <body style="margin:0;background:#f4f4f2;font-family:'Apple SD Gothic Neo',Pretendard,sans-serif;color:#222;">
-  <div style="max-width:640px;margin:0 auto;padding:24px;">
+  <div style="max-width:680px;margin:0 auto;padding:24px;">
     <p style="font-size:13px;color:#888;margin:0 0 4px;">실버케어플러스 · 요양·실버 주간 다이제스트</p>
     <h1 style="font-size:21px;font-weight:800;margin:0 0 4px;">{{ digest.headline }}</h1>
     <p style="font-size:13px;color:#888;margin:0 0 20px;">{{ period }}</p>
