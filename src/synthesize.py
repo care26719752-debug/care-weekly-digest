@@ -50,6 +50,9 @@ local_brief=true(단일 지자체 단발 단신)는 기본 제외. 단 ①전국
 [시너지] 복지부 보도자료(사실)와 전문매체(해설)가 같은 사안을 다루면 한 축 안에서 엮어
 "무슨 일 + 요양원 운영 관점 시사점"을 함께 제시한다.
 
+[출처 표기] sources에는 그 축 브리핑의 근거가 된 기사를 입력 목록의 "id"(정수)로만 적는다.
+제목 문자열이 아니라 반드시 id 숫자. 근거 기사가 없으면 빈 배열 [].
+
 [출력] 반드시 아래 JSON 스키마로만 응답한다. 다른 텍스트 금지. axes는 위 4개를 순서대로.
 {{
   "headline": "이번 주 한 줄 요약",
@@ -59,7 +62,7 @@ local_brief=true(단일 지자체 단발 단신)는 기본 제외. 단 ①전국
       "active": true,
       "briefing": "이 축에서 이번 주 무슨 일이 있었나 (2~4문장). 없으면 '이번 주 특이 동향 없음'",
       "implication": "요양원 운영 관점 시사점 (active일 때만, 1~2문장, 없으면 빈 문자열)",
-      "sources": ["기사 제목들"]
+      "sources": [3, 7]
     }}
   ],
   "dropped_note": "시사성 낮아 제외한 것들을 한 줄로 솔직히 (없으면 빈 문자열)"
@@ -68,7 +71,8 @@ local_brief=true(단일 지자체 단발 단신)는 기본 제외. 단 ①전국
 
 
 def _build_user_prompt(articles: list[Article]) -> str:
-    payload = [a.to_prompt_dict() for a in articles]
+    # id를 부여해 LLM이 출처를 id로 지목 → 발행 시 정확히 URL 매핑(제목 퍼지매칭 제거)
+    payload = [{"id": i, **a.to_prompt_dict()} for i, a in enumerate(articles)]
     return (
         "다음은 이번 주 수집·1차필터를 통과한 기사 목록이다. "
         "고정 4개 축을 기준으로 지난 7일을 브리핑해 JSON으로 응답하라.\n\n"
@@ -82,8 +86,10 @@ def synthesize(articles: list[Article], model: str | None = None) -> dict:
 
     resp = client.messages.create(
         model=model,
-        max_tokens=8000,
-        thinking={"type": "adaptive"},
+        max_tokens=16000,
+        # thinking을 8000으로 고정: adaptive는 예산을 전부 소진해 JSON 출력이 0토큰으로 잘렸음.
+        # 명시 budget으로 thinking을 8000에서 멈추고 출력용 8000을 항상 확보. (max_tokens 32000은 비스트리밍 10분 제한 초과)
+        thinking={"type": "enabled", "budget_tokens": 8000},
         system=SYSTEM,
         messages=[{"role": "user", "content": _build_user_prompt(articles)}],
     )
